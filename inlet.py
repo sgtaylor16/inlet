@@ -5,6 +5,22 @@ from matplotlib.patches import Circle
 import json
 from math import cos,sin,tan,pi
 
+def plotPolarFunction(func,maxrad:float,resolution:int = 200):
+    xvalues = np.linspace(-maxrad,maxrad,resolution)
+    yvalues = np.linspace(-maxrad,maxrad,resolution)
+    xg,yg = np.meshgrid(xvalues,yvalues)
+    r = np.sqrt(xg **2 + yg**2)
+    theta = np.arctan2(yg,xg)
+    def tempfunc(r,theta):
+        if r > maxrad:
+            return 0
+        else: 
+            return func(r,theta)
+    newfunc = np.vectorize(tempfunc)
+    zg = newfunc(r,theta)
+    fig,ax = plt.subplots(figsize=(6,6))
+    ax.contourf(xg,yg,zg)
+    
 class Rake:
     def __init__(self):
         self.od = 0
