@@ -4,13 +4,19 @@ import pandas as pd
 from matplotlib.patches import Circle
 import json
 from math import cos,sin,tan,pi
+from scipy.interpolate import griddata
+
+def carToPolar(x,y):
+    r = np.sqrt(x**2 + y**2)
+    theta = np.arctan2(y,x)
+    return [r,theta]
 
 def plotPolarFunction(func,maxrad:float,resolution:int = 200):
     xvalues = np.linspace(-maxrad,maxrad,resolution)
     yvalues = np.linspace(-maxrad,maxrad,resolution)
     xg,yg = np.meshgrid(xvalues,yvalues)
-    r = np.sqrt(xg **2 + yg**2)
-    theta = np.arctan2(yg,xg)
+    r,theta = carToPolar(xg,yg)
+
     def tempfunc(r,theta):
         if r > maxrad:
             return 0
@@ -20,7 +26,7 @@ def plotPolarFunction(func,maxrad:float,resolution:int = 200):
     zg = newfunc(r,theta)
     fig,ax = plt.subplots(figsize=(6,6))
     ax.contourf(xg,yg,zg)
-    
+
 class Rake:
     def __init__(self):
         self.od = 0
@@ -57,26 +63,31 @@ class Result:
         self.rake = rake
     def blankdf(self):
         return self.Rake.rakedf[['name','r','theta']].set_index('name')
-    def createPolarResults(self,name,func,dx:float=200):
-
-        #Create a temporary function in x and y
-        def newfunc(x,y):
-            r = np.sqrt(x**2 + y**2)
-            theta = np.arctan2(y,x)
-            if r > self.rake.od:
-                return 0
-            else:
-                return func(r,theta)
+    def createInterpolator(self,func,dx:float=200):
+        '''
+        Returns a function that utilizes scipy.griddata to return values based on grid
+        of known values
+        '''
+        results = []
+        for measure in self.rake.rakedf.iterrows():
+            temp = measure[1]
+            r,theta = carToPolar(temp['x'],temp['y'])
+            results.append(func(r,theta))
+        results = np.array(results)
         
-        newfunc = np.vectorize(newfunc)
+        def returnfunc(x,y):
+            return griddata(self.rake.rakedf[['x','y']]).to_numpy(), results,[x,y]
 
-        xvalues = np.linspace(-self.rake.od,self.rake.od,dx)
-        yvalues = np.linspace(-self.rake.od,self.rake.od,dx)
-        xg,yg = np.meshgrid(xvalues,yvalues)
+        return returnfunc
 
-        oneresult = newfunc(xg,yg)
+    def createResults(self,name,interp_func,dx:float=200):
 
-        self.resultsdir[name]=oneresult
-
-        return None
-
+        #Create the meshgrid
+        results =[]
+        for measure in self.rake.rakedf.iterrows():
+            temp = measure[1]
+            r,theta = carToPolar(temp['x'],temp['y'])
+            r = np.sqrt(temp['x']**2 + temp['y']**2)
+            theta = np.arctan2(temp['y'],temp['x'])
+            results.append(func(r,theta))
+        results = np.array(results)
