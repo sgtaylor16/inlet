@@ -40,6 +40,7 @@ class Rake:
             self.rakedf= pd.DataFrame.from_dict(tempdir['rakepositions'])
             self.rakedf['x'] = self.rakedf.apply(lambda row: self.od*row['r']*cos(row['theta'] * pi/180),axis =1)
             self.rakedf['y'] = self.rakedf.apply(lambda row: self.od*row['r']*sin(row['theta'] * pi/180),axis =1)
+            self.rakedf.set_index('name')
 
         return None
 
@@ -58,36 +59,27 @@ class Rake:
 
 class Result:
     def __init__(self):
-        self.resultsdir = {}
+        self.resultdir = {}
     def set_rake(self,rake:object):
         self.rake = rake
     def blankdf(self):
-        return self.Rake.rakedf[['name','r','theta']].set_index('name')
+        return self.rake.rakedf[['name']] 
+    def polarFunctionResult(self,name:str,function):
+        resultdf = self.blankdf().copy()
+        for probe in resultdf.index:
+            r = self.rake.rakedf.loc[probe,'r']
+            theta = self.rake.rakedf.loc[probe,'theta']
+            resultdf.loc[probe,'measurement'] = function(r,theta)
+        self.resultdir[name] = resultdf
+
+        return resultdf
+
     def createInterpolator(self,func,dx:float=200):
         '''
         Returns a function that utilizes scipy.griddata to return values based on grid
         of known values
         '''
-        results = []
-        for measure in self.rake.rakedf.iterrows():
-            temp = measure[1]
-            r,theta = carToPolar(temp['x'],temp['y'])
-            results.append(func(r,theta))
-        results = np.array(results)
+        # Evalue the function at the meshpoints
+
         
-        def returnfunc(x,y):
-            return griddata(self.rake.rakedf[['x','y']]).to_numpy(), results,[x,y]
 
-        return returnfunc
-
-    def createResults(self,name,interp_func,dx:float=200):
-
-        #Create the meshgrid
-        results =[]
-        for measure in self.rake.rakedf.iterrows():
-            temp = measure[1]
-            r,theta = carToPolar(temp['x'],temp['y'])
-            r = np.sqrt(temp['x']**2 + temp['y']**2)
-            theta = np.arctan2(temp['y'],temp['x'])
-            results.append(func(r,theta))
-        results = np.array(results)
