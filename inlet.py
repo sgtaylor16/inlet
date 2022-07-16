@@ -6,10 +6,16 @@ import json
 from math import cos,sin,tan,pi
 from scipy.interpolate import griddata
 
-def carToPolar(x,y):
-    r = np.sqrt(x**2 + y**2)
-    theta = np.arctan2(y,x)
-    return [r,theta]
+def carToPolar(x,y) -> list:
+    
+    if (type(x) == float) or (type(x) == list):
+        x = np.array(x)
+    if (type(y) == float)  or (type(y) == list):
+        y = np.array(y)
+    return [np.sqrt(x**2 + y**2),np.arctan2(y,x)]
+
+def polarToCar(r,theta):
+    return [r * np.cos(theta * pi/180), r * np.sin(theta * pi/180)]
 
 def plotPolarFunction(func,maxrad:float,resolution:int = 200):
     xvalues = np.linspace(-maxrad,maxrad,resolution)
@@ -30,7 +36,7 @@ def plotPolarFunction(func,maxrad:float,resolution:int = 200):
 class Rake:
     def __init__(self):
         self.od = 0
-    def read_rake_json(self,filepath:str):
+    def read_rake_json(self,filepath:str) -> None:
         '''
         Reads a json file defining a rake array
         '''
@@ -44,7 +50,7 @@ class Rake:
 
         return None
 
-    def create_figure(self,rakepts:bool = False):
+    def create_figure(self,rakepts:bool = False) -> None:
         self.fig,self.ax = plt.subplots(figsize=(8,8))
         self.ax.set_xlim([-self.od,self.od])
         self.ax.set_ylim([-self.od,self.od])
@@ -65,6 +71,10 @@ class Result:
     def blankdf(self):
         return self.rake.rakedf[['name']] 
     def polarFunctionResult(self,name:str,function):
+        '''
+        Method to take an analytical function and map it's values onto the 
+        rake locations.
+        '''
         resultdf = self.blankdf().copy()
         for probe in resultdf.index:
             r = self.rake.rakedf.loc[probe,'r']
@@ -74,12 +84,18 @@ class Result:
 
         return resultdf
 
-    def createInterpolator(self,func,dx:float=200):
+    def createInterpolator(self,resultname,dx:float=200):
         '''
         Returns a function that utilizes scipy.griddata to return values based on grid
         of known values
         '''
-        # Evalue the function at the meshpoints
+        # Evalue the function at the meshpoints in cartesian coordinates
+        xy = None
+        def newFunc(x,y):
+            #Convert x and y into r and theta
+            r,theta = carToPolar(x,y)
+
+
 
         
 
