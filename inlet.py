@@ -5,6 +5,7 @@ from matplotlib.patches import Circle
 import json
 from math import cos,sin,tan,pi,atan
 from scipy.interpolate import griddata
+from typing import Iterable
 
 def arctan2(xy) -> float:
     x = xy[0]
@@ -33,13 +34,25 @@ def arctan2(xy) -> float:
 def sumsquare(xy:list[float]) -> float:
     return (xy[0]**2 + xy[1]**2)**.5
 
-def carToPolar(xy:list[float]) -> list[float]:
+def carToPolar(xy:Iterable[float]) -> list[float]:
     return [sumsquare(xy),arctan2(xy)]
     
-def polarToCar(rtheta:list[float]) -> list[float]:
+def loopCarToPolar(xylist:Iterable)-> list:
+    intlist = []
+    for pair in xylist:
+        intlist.append(carToPolar(pair))
+    return intlist
+
+def polarToCar(rtheta:Iterable[float]) -> list[float]:
     r = rtheta[0]
     theta = rtheta[1]
     return [r * cos(theta), r * sin(theta)]
+
+def loopPolarToCar(rthetalist:Iterable) -> list:
+    intlist = []
+    for pair in rthetalist:
+        intlist.append(polarToCar(pair))
+    return intlist
 
 def plotPolarFunction(func,maxrad:float,resolution:int = 200):
     xvalues = np.linspace(-maxrad,maxrad,resolution)
