@@ -7,8 +7,8 @@ from math import cos,sin,tan,pi,atan
 from scipy.interpolate import griddata
 
 def arctan2(xy) -> float:
-    x = float(xy[0])
-    y = float(xy[1])
+    x = xy[0]
+    y = xy[1]
     if (x==0.0) and (y > 0):
         return pi/2
     elif (x ==0.0) and (y < 0):
@@ -30,14 +30,16 @@ def arctan2(xy) -> float:
     else:
         raise ValueError
 
-def sumsquare(xy) -> float:
+def sumsquare(xy:list[float]) -> float:
     return (xy[0]**2 + xy[1]**2)**.5
 
-def carToPolar(xy) -> list:
+def carToPolar(xy:list[float]) -> list[float]:
     return [sumsquare(xy),arctan2(xy)]
     
-def polarToCar(r,theta):
-    return [r * np.cos(theta * pi/180), r * np.sin(theta * pi/180)]
+def polarToCar(rtheta:list[float]) -> list[float]:
+    r = rtheta[0]
+    theta = rtheta[1]
+    return [r * cos(theta), r * sin(theta)]
 
 def plotPolarFunction(func,maxrad:float,resolution:int = 200):
     xvalues = np.linspace(-maxrad,maxrad,resolution)
