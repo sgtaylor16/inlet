@@ -3,17 +3,40 @@ import numpy as np
 import pandas as pd
 from matplotlib.patches import Circle
 import json
-from math import cos,sin,tan,pi
+from math import cos,sin,tan,pi,atan
 from scipy.interpolate import griddata
 
-def carToPolar(x,y) -> list:
-    
-    if (type(x) == float) or (type(x) == list):
-        x = np.array(x)
-    if (type(y) == float)  or (type(y) == list):
-        y = np.array(y)
-    return [np.sqrt(x**2 + y**2),np.arctan2(y,x)]
+def arctan2(xy):
+    x = float(xy[0])
+    y = float(xy[1])
+    if (x==0.0) and (y > 0):
+        return pi/2
+    elif (x ==0.0) and (y < 0):
+        return 1.5 * pi
+    elif (x==0.0) and (y==0.0):
+        return 0.0
+    #Quadrant 1
+    elif (x >= 0) and (y >= 0):
+        return atan(y/x)
+    #Quadrant 2
+    elif (x < 0) and (y > 0):
+        return atan(y/x) + pi
+    #Quadrant 3
+    elif (x < 0) and (y <= 0):
+        return atan(y/x) + pi
+    #Quadrant 4
+    elif (x >= 0) and (y < 0):
+        return atan(y/x) + 2 * pi
+    else:
+        raise ValueError
 
+def carToPolar(xy):
+    #change xy to an nparray
+    if type(xy) == list:
+        xy = np.array(xy)
+    
+    return np.array([np.sqrt(xy[0]**2 + xy[1]**2),arctan2(xy))
+    
 def polarToCar(r,theta):
     return [r * np.cos(theta * pi/180), r * np.sin(theta * pi/180)]
 
