@@ -36,6 +36,11 @@ def sumsquare(xy:list[float]) -> float:
 
 def carToPolar(xy:Iterable[float]) -> list[float]:
     return [sumsquare(xy),arctan2(xy)]
+
+def carToPolar2(x:float,y:float) -> list:
+    r = np.sqrt(x**2+y**2)
+    theta = np.arctan2(y,x)
+    return [r,theta]
     
 def loopCarToPolar(xylist:Iterable)-> list:
     intlist = []
@@ -58,7 +63,7 @@ def plotPolarFunction(func,maxrad:float,resolution:int = 200):
     xvalues = np.linspace(-maxrad,maxrad,resolution)
     yvalues = np.linspace(-maxrad,maxrad,resolution)
     xg,yg = np.meshgrid(xvalues,yvalues)
-    r,theta = carToPolar(xg,yg)
+    r,theta = carToPolar2(xg,yg)
 
     def tempfunc(r,theta):
         if r > maxrad:
@@ -130,7 +135,7 @@ class Result:
         xy = None
         def newFunc(x,y):
             #Convert x and y into r and theta
-            r,theta = carToPolar(x,y)
+            r,theta = carToPolar2(x,y)
 
 
 
