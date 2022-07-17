@@ -6,7 +6,7 @@ import json
 from math import cos,sin,tan,pi,atan
 from scipy.interpolate import griddata
 
-def arctan2(xy):
+def arctan2(xy) -> float:
     x = float(xy[0])
     y = float(xy[1])
     if (x==0.0) and (y > 0):
@@ -30,12 +30,11 @@ def arctan2(xy):
     else:
         raise ValueError
 
-def carToPolar(xy):
-    #change xy to an nparray
-    if type(xy) == list:
-        xy = np.array(xy)
-    
-    return np.array([np.sqrt(xy[0]**2 + xy[1]**2),arctan2(xy))
+def sumsquare(xy) -> float:
+    return (xy[0]**2 + xy[1]**2)**.5
+
+def carToPolar(xy) -> list:
+    return [sumsquare(xy),arctan2(xy)]
     
 def polarToCar(r,theta):
     return [r * np.cos(theta * pi/180), r * np.sin(theta * pi/180)]
