@@ -2,12 +2,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.patches import Circle
+from matplotlib.tri import Triangulation
 import json
 from math import cos,sin,tan,pi,atan
 from scipy.interpolate import griddata
-from typing import Iterable
+from typing import Iterable,Callable,List,Annotated, Literal
+from inlettypes import RakePositions, OneProbe, DataPoint
 
-def arctan2(xy) -> float:
+def arctan2(xy:Iterable) -> float:
     x = xy[0]
     y = xy[1]
     if (x==0.0) and (y > 0):
@@ -31,7 +33,7 @@ def arctan2(xy) -> float:
     else:
         raise ValueError
 
-def sumsquare(xy:list[float]) -> float:
+def sumsquare(xy:Iterable[float]) -> float:
     return (xy[0]**2 + xy[1]**2)**.5
 
 def carToPolar(xy:Iterable[float]) -> list[float]:
@@ -42,7 +44,7 @@ def carToPolar2(x:float,y:float) -> list:
     theta = np.arctan2(y,x)
     return [r,theta]
     
-def loopCarToPolar(xylist:Iterable)-> list:
+def loopCarToPolar(xylist:list)-> list:
     intlist = []
     for pair in xylist:
         intlist.append(carToPolar(pair))
@@ -59,7 +61,7 @@ def loopPolarToCar(rthetalist:Iterable) -> list:
         intlist.append(polarToCar(pair))
     return intlist
 
-def plotPolarFunction(func,maxrad:float,resolution:int = 200):
+def plotPolarFunction(func:Callable,maxrad:float,resolution:int = 200):
     xvalues = np.linspace(-maxrad,maxrad,resolution)
     yvalues = np.linspace(-maxrad,maxrad,resolution)
     xg,yg = np.meshgrid(xvalues,yvalues)
@@ -75,7 +77,11 @@ def plotPolarFunction(func,maxrad:float,resolution:int = 200):
     fig,ax = plt.subplots(figsize=(6,6))
     ax.contourf(xg,yg,zg)
 
+
 class Rake:
+    """
+    Class to define a rake object. Stores the base locations of all of the rakes in an array.
+    """
     def __init__(self):
         self.od = 0
     def read_rake_json(self,filepath:str) -> None:
@@ -93,6 +99,9 @@ class Rake:
         return None
 
     def create_figure(self,rakepts:bool = False) -> None:
+        '''
+        Method to create a figure with the rake locations plotted
+        '''
         self.fig,self.ax = plt.subplots(figsize=(8,8))
         self.ax.set_xlim([-self.od,self.od])
         self.ax.set_ylim([-self.od,self.od])
@@ -104,6 +113,59 @@ class Rake:
                 data = rakept[1]
                 self.ax.plot(data['x'],data['y'],marker = '.',color = 'grey')
         return None
+
+class Measurement:
+    def __init__(self,rake:object,condition:str):
+        self.rake = rake
+        self.measurements = []
+   
+    def record(self,offset:float,meas:DataPoint) -> None:
+        tempdf = self.rake.rakedf
+        r = tempdf.loc[tempdf.name == meas.name,'r'].values[0]
+        theta = tempdf.loc[tempdf.name == meas.name,'theta'].values[0] + offset
+        self.measurements.append([r,theta,meas.yaw,meas.pitch,meas.pt])
+
+    def recordout(self,filepath:str) -> None:
+        outlist = []
+        for onemeas in self.measurements:
+            outlist.append({'r':float(onemeas[0]),'theta':float(onemeas[1]),'yaw':float(onemeas[2]),'pitch':float(onemeas[3]),'pt':float(onemeas[4])})
+        with open(filepath,'w') as fh:
+            json.dump(outlist,fh)
+
+    def simMeasurement(self,func:Callable) -> None:
+        '''
+        Method to simulate a measurement based on a function
+        '''
+        for index,probehead in self.rake.rakedf.iterrows():
+            name = probehead['name']
+            r = probehead['r']
+            theta = probehead['theta']
+            measurement = func(r,theta)
+            self.record(0,DataPoint(name=name,yaw=measurement,pitch=measurement,pt=measurement))
+
+    def plotMeasurement(self,mesurement:Literal['yaw','pitch','pt']) -> None:
+        temparray = np.array(self.measurements)
+        radii = temparray[:,0]
+        angles = temparray[:,1]
+        
+        x = (radii * np.cos(angles)).flatten()
+        y = (radii * np.sin(angles)).flatten()
+        if mesurement == 'yaw':
+            z = temparray[:,2]
+        elif mesurement == 'pitch':
+            z = temparray[:,3]
+        elif mesurement == 'pt':
+            z = temparray[:,4]
+        else:
+            raise ValueError
+        triang = Triangulation(x, y)
+        triang.set_mask(np.hypot(x[triang.triangles].mean(axis=1), y[triang.triangles].mean(axis=1)) <  self.rake.od)
+        
+        fig,ax = plt.subplots(figsize=(8,8))
+        ax.set_aspect('equal')
+        
+        tcf = ax.tricontourf(triang,z)
+        fig.colorbar(tcf)
 
 class Result:
     def __init__(self):
