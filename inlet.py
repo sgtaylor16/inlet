@@ -82,8 +82,8 @@ class Rake:
     """
     Class to define a rake object. Stores the base locations of all of the rakes in an array.
     """
-    def __init__(self):
-        self.od = 0
+    def __init__(self,od:float=1):
+        self.od = od
     def read_rake_json(self,filepath:str) -> None:
         '''
         Reads a json file defining a rake array
@@ -139,14 +139,14 @@ class Measurement:
         for index,probehead in self.rake.rakedf.iterrows():
             name = probehead['name']
             r = probehead['r']
-            theta = probehead['theta']
+            theta = probehead['theta'] * pi/180
             measurement = func(r,theta)
             self.record(0,DataPoint(name=name,yaw=measurement,pitch=measurement,pt=measurement))
 
     def plotMeasurement(self,mesurement:Literal['yaw','pitch','pt']) -> None:
         temparray = np.array(self.measurements)
         radii = temparray[:,0]
-        angles = temparray[:,1]
+        angles =  temparray[:,1] * pi/180
         
         x = (radii * np.cos(angles)).flatten()
         y = (radii * np.sin(angles)).flatten()
@@ -159,7 +159,7 @@ class Measurement:
         else:
             raise ValueError
         triang = Triangulation(x, y)
-        triang.set_mask(np.hypot(x[triang.triangles].mean(axis=1), y[triang.triangles].mean(axis=1)) <  self.rake.od)
+        #triang.set_mask(np.hypot(x[triang.triangles].mean(axis=1), y[triang.triangles].mean(axis=1)) <  self.rake.od)
         
         fig,ax = plt.subplots(figsize=(8,8))
         ax.set_aspect('equal')
