@@ -132,16 +132,17 @@ class Measurement:
         with open(filepath,'w') as fh:
             json.dump(outlist,fh)
 
-    def simMeasurement(self,func:Callable) -> None:
+    def simMeasurement(self,func:Callable,offsets=[0]) -> None:
         '''
         Method to simulate a measurement based on a function
         '''
-        for index,probehead in self.rake.rakedf.iterrows():
-            name = probehead['name']
-            r = probehead['r']
-            theta = probehead['theta'] * pi/180
-            measurement = func(r,theta)
-            self.record(0,DataPoint(name=name,yaw=measurement,pitch=measurement,pt=measurement))
+        for offset in offsets:
+            for index,probehead in self.rake.rakedf.iterrows():
+                name = probehead['name']
+                r = probehead['r']
+                theta = probehead['theta'] * pi/180 + offset * pi/180
+                measurement = func(r,theta)
+                self.record(offset,DataPoint(name=name,yaw=measurement,pitch=measurement,pt=measurement))
 
     def plotMeasurement(self,mesurement:Literal['yaw','pitch','pt']) -> None:
         temparray = np.array(self.measurements)
