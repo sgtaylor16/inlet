@@ -77,24 +77,23 @@ def plotPolarFunction(func:Callable,maxrad:float,resolution:int = 200):
     fig,ax = plt.subplots(figsize=(6,6))
     ax.contourf(xg,yg,zg)
 
-
-class Rake:
+class Array:
     """
-    Class to define a rake object. Stores the base locations of all of the rakes in an array.
+    Class to define a Array Class. Stores the base locations of all of the rakes in an array.
     """
     def __init__(self,od:float=1):
         self.od = od
-    def read_rake_json(self,filepath:str) -> None:
+    def read_array_json(self,filepath:str) -> None:
         '''
-        Reads a json file defining a rake array
+        Reads a json file defining a  array
         '''
         with open(filepath,'r') as fh:
             tempdir = json.load(fh)
             self.od = tempdir["OD"]
-            self.rakedf= pd.DataFrame.from_dict(tempdir['rakepositions'])
-            self.rakedf['x'] = self.rakedf.apply(lambda row: self.od*row['r']*cos(row['theta'] * pi/180),axis =1)
-            self.rakedf['y'] = self.rakedf.apply(lambda row: self.od*row['r']*sin(row['theta'] * pi/180),axis =1)
-            self.rakedf.set_index('name')
+            self.arraydf= pd.DataFrame.from_dict(tempdir['rakepositions'])
+            self.arraydf['x'] = self.arraydf.apply(lambda row: self.od*row['r']*cos(row['theta'] * pi/180),axis =1)
+            self.ararydf['y'] = self.arraydf.apply(lambda row: self.od*row['r']*sin(row['theta'] * pi/180),axis =1)
+            self.arraydf.set_index('name')
 
         return None
 
@@ -109,18 +108,18 @@ class Rake:
         self.ax.add_patch(circle)
 
         if rakepts is True:
-            for rakept in self.rakedf.iterrows():
+            for rakept in self.arraydf.iterrows():
                 data = rakept[1]
                 self.ax.plot(data['x'],data['y'],marker = '.',color = 'grey')
         return None
 
 class Measurement:
-    def __init__(self,rake:object,condition:str):
-        self.rake = rake
+    def __init__(self,array:object,condition:str):
+        self.rake = array
         self.measurements = []
    
     def record(self,offset:float,meas:DataPoint) -> None:
-        tempdf = self.rake.rakedf
+        tempdf = self.rake.arraydf
         r = tempdf.loc[tempdf.name == meas.name,'r'].values[0]
         theta = tempdf.loc[tempdf.name == meas.name,'theta'].values[0] + offset
         self.measurements.append([r,theta,meas.yaw,meas.pitch,meas.pt])
@@ -137,7 +136,7 @@ class Measurement:
         Method to simulate a measurement based on a function
         '''
         for offset in offsets:
-            for index,probehead in self.rake.rakedf.iterrows():
+            for index,probehead in self.rake.arraydf.iterrows():
                 name = probehead['name']
                 r = probehead['r']
                 theta = probehead['theta'] * pi/180 + offset * pi/180
@@ -167,38 +166,6 @@ class Measurement:
         
         tcf = ax.tricontourf(triang,z)
         fig.colorbar(tcf)
-
-class Result:
-    def __init__(self):
-        self.resultdir = {}
-    def set_rake(self,rake:object):
-        self.rake = rake
-    def blankdf(self):
-        return self.rake.rakedf[['name']] 
-    def polarFunctionResult(self,name:str,function):
-        '''
-        Method to take an analytical function and map it's values onto the 
-        rake locations.
-        '''
-        resultdf = self.blankdf().copy()
-        for probe in resultdf.index:
-            r = self.rake.rakedf.loc[probe,'r']
-            theta = self.rake.rakedf.loc[probe,'theta']
-            resultdf.loc[probe,'measurement'] = function(r,theta)
-        self.resultdir[name] = resultdf
-
-        return resultdf
-
-    def createInterpolator(self,resultname,dx:float=200):
-        '''
-        Returns a function that utilizes scipy.griddata to return values based on grid
-        of known values
-        '''
-        # Evalue the function at the meshpoints in cartesian coordinates
-        xy = None
-        def newFunc(x,y):
-            #Convert x and y into r and theta
-            r,theta = carToPolar2(x,y)
 
 
 
